@@ -245,7 +245,10 @@ def getProps(String propName) {
         return "";
     }
 }
-apply plugin: 'com.google.gms.google-services'
+// NotGram: google-services plugin applies only in the app module (TMessagesProj_App).
+// The library namespace is org.telegram.messenger while the app id is org.notgram.messenger,
+// which made processReleaseGoogleServices fail with "No matching client found".
+
 
 task checkVisibility {
     doFirst {
