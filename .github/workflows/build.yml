@@ -1,0 +1,45 @@
+name: NotGram build
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK components
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" "platforms;android-36" "build-tools;36.0.0" \
+            "ndk;27.2.12479018" "cmake;3.22.1"
+
+      - name: Verify signing keystore
+        run: |
+          test -f TMessagesProj/config/release.keystore && echo "keystore ok"
+
+      - name: Build NotGram (arm64-v8a)
+        run: ./gradlew :TMessagesProj_App:assembleArm64Release --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p dist
+          cp TMessagesProj_App/build/outputs/apk/arm64/release/*.apk dist/NotGram.apk
+          ls -la dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NotGram-APK
+          path: dist/NotGram.apk
