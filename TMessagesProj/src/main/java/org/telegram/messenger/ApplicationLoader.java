@@ -192,6 +192,21 @@ public class ApplicationLoader extends Application {
         return null;
     }
 
+    // NotGram: append a diagnostic line to a user-readable file (no adb/root needed)
+    public static void logNet(String message) {
+        try {
+            File dir = new File(Environment.getExternalStorageDirectory(), "Android/media/org.notgram.messenger");
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            try (PrintWriter pw = new PrintWriter(new FileWriter(new File(dir, "notgram_net.txt"), true))) {
+                pw.println(new Date() + " " + message);
+                pw.flush();
+            }
+        } catch (Throwable ignore) {
+        }
+    }
+
     public static void postInitApplication() {
         if (applicationInited || applicationContext == null) {
             return;

@@ -447,6 +447,8 @@ public class ConnectionsManager extends BaseController {
                         error = new TLRPC.TL_error();
                         error.code = errorCode;
                         error.text = errorText;
+                        // NotGram: always log RPC errors to a readable file (helps diagnose login issues)
+                        ApplicationLoader.logNet("acct " + currentAccount + " RPC error " + errorCode + " " + errorText + " req=" + object);
                         if (BuildVars.LOGS_ENABLED && error.code != -2000) {
                             FileLog.e(object + " got error " + error.code + " " + error.text);
                         }
@@ -851,6 +853,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     public static void onConnectionStateChanged(final int state, final int currentAccount) {
+        ApplicationLoader.logNet("acct " + currentAccount + " connection state -> " + state);
         AndroidUtilities.runOnUIThread(() -> {
             getInstance(currentAccount).connectionState = state;
             AccountInstance.getInstance(currentAccount).getNotificationCenter().postNotificationName(NotificationCenter.didUpdateConnectionState);
