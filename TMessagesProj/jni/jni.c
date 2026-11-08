@@ -13,7 +13,6 @@
 #include <time.h>
 #include <signal.h>
 #include <fcntl.h>
-#include <execinfo.h>
 
 #define NOTGRAM_CRASH_LOG "/storage/emulated/0/Android/media/org.notgram.messenger/native_crash.txt"
 #define NOTGRAM_ALT_STACK_SIZE (64 * 1024)
@@ -24,14 +23,13 @@ static void notgram_native_crash_handler(int sig, siginfo_t *info, void *context
     int fd = open(NOTGRAM_CRASH_LOG, O_WRONLY | O_CREAT | O_APPEND, 0666);
     if (fd >= 0) {
         char header[256];
-        int len = snprintf(header, sizeof(header), "\n=== native crash: signal %d, addr %p ===\n", sig, info != NULL ? info->si_addr : NULL);
+        int len = snprintf(header, sizeof(header), "\n=== native crash: signal %d (%s), addr %p, tid %d ===\n",
+                           sig,
+                           sig == SIGSEGV ? "SIGSEGV" : sig == SIGABRT ? "SIGABRT" : sig == SIGBUS ? "SIGBUS" : sig == SIGILL ? "SIGILL" : sig == SIGFPE ? "SIGFPE" : "?",
+                           info != NULL ? info->si_addr : NULL,
+                           gettid());
         if (len > 0) {
             write(fd, header, (size_t) len);
-        }
-        void *frames[64];
-        int count = backtrace(frames, 64);
-        if (count > 0) {
-            backtrace_symbols_fd(frames, count, fd);
         }
         close(fd);
     }
