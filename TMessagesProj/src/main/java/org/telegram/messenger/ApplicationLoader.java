@@ -218,6 +218,10 @@ public class ApplicationLoader extends Application {
 
                     boolean isSlow = isConnectionSlow();
                     for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                        // NotGram: do not spin up network machinery for accounts that are not logged in
+                        if (!UserConfig.getInstance(a).isClientActivated()) {
+                            continue;
+                        }
                         ConnectionsManager.getInstance(a).checkConnection();
                         FileLoader.getInstance(a).onNetworkChanged(isSlow);
                     }
@@ -250,8 +254,16 @@ public class ApplicationLoader extends Application {
 
         SharedConfig.loadConfig();
         SharedPrefsHelper.init(applicationContext);
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
+        // NotGram: load configs for all accounts (cheap), but only create heavy controllers
+        // for accounts that are actually logged in. Creating 64 MessagesController /
+        // ConnectionsManager instances on the UI thread caused OOM/freeze and crashes.
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             UserConfig.getInstance(a).loadConfig();
+        }
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
+            if (a != 0 && !UserConfig.getInstance(a).isClientActivated()) {
+                continue;
+            }
             MessagesController.getInstance(a);
             if (a == 0) {
                 SharedConfig.pushStringStatus = "__FIREBASE_GENERATING_SINCE_" + ConnectionsManager.getInstance(a).getCurrentTime() + "__";
@@ -273,6 +285,9 @@ public class ApplicationLoader extends Application {
 
         MediaController.getInstance();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
+            if (a != 0 && !UserConfig.getInstance(a).isClientActivated()) {
+                continue;
+            }
             ContactsController.getInstance(a).checkAppAccount();
             DownloadController.getInstance(a);
         }
@@ -313,6 +328,25 @@ public class ApplicationLoader extends Application {
                     previousHandler.uncaughtException(thread, throwable);
                 }
             });
+        } catch (Throwable ignore) {
+        }
+        // NotGram: startup marker, verifies that logging to Android/media works
+        try {
+            File dir = null;
+            final File[] mediaDirs = getExternalMediaDirs();
+            if (mediaDirs != null && mediaDirs.length > 0) {
+                dir = mediaDirs[0];
+            }
+            if (dir == null) {
+                dir = new File(Environment.getExternalStorageDirectory(), "Android/media/org.notgram.messenger");
+            }
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            try (PrintWriter pw = new PrintWriter(new FileWriter(new File(dir, "notgram_crash.txt"), true))) {
+                pw.println("=== app start " + new Date() + " ===");
+                pw.flush();
+            }
         } catch (Throwable ignore) {
         }
         try {

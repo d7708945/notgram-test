@@ -11,6 +11,53 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <execinfo.h>
+
+#define NOTGRAM_CRASH_LOG "/storage/emulated/0/Android/media/org.notgram.messenger/native_crash.txt"
+#define NOTGRAM_ALT_STACK_SIZE (64 * 1024)
+
+static char notgram_alt_stack[NOTGRAM_ALT_STACK_SIZE];
+
+static void notgram_native_crash_handler(int sig, siginfo_t *info, void *context) {
+    int fd = open(NOTGRAM_CRASH_LOG, O_WRONLY | O_CREAT | O_APPEND, 0666);
+    if (fd >= 0) {
+        char header[256];
+        int len = snprintf(header, sizeof(header), "\n=== native crash: signal %d, addr %p ===\n", sig, info != NULL ? info->si_addr : NULL);
+        if (len > 0) {
+            write(fd, header, (size_t) len);
+        }
+        void *frames[64];
+        int count = backtrace(frames, 64);
+        if (count > 0) {
+            backtrace_symbols_fd(frames, count, fd);
+        }
+        close(fd);
+    }
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
+static void notgram_install_native_crash_handler(void) {
+    stack_t ss;
+    memset(&ss, 0, sizeof(ss));
+    ss.ss_sp = notgram_alt_stack;
+    ss.ss_size = sizeof(notgram_alt_stack);
+    ss.ss_flags = 0;
+    sigaltstack(&ss, NULL);
+
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_sigaction = notgram_native_crash_handler;
+    sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGABRT, &sa, NULL);
+    sigaction(SIGBUS, &sa, NULL);
+    sigaction(SIGILL, &sa, NULL);
+    sigaction(SIGFPE, &sa, NULL);
+}
 
 int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);
 int videoOnJNILoad(JavaVM *vm, JNIEnv *env);
@@ -20,6 +67,7 @@ int ffmpegOnJNILoad(JavaVM *vm, JNIEnv *env);
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 	JNIEnv *env = 0;
     srand(time(NULL));
+    notgram_install_native_crash_handler();
     
 	if ((*vm)->GetEnv(vm, (void **) &env, JNI_VERSION_1_6) != JNI_OK) {
 		return -1;
