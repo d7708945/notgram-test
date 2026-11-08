@@ -1545,6 +1545,17 @@ public class ConnectionsManager extends BaseController {
     @Keep
     public static void onIntegrityCheckClassic(final int currentAccount, final int requestToken, final String project, final String nonce) {
         ApplicationLoader.logNet("acct " + currentAccount + " integrity check requested, project=" + project);
+        final java.util.concurrent.atomic.AtomicBoolean integrityDone = new java.util.concurrent.atomic.AtomicBoolean(false);
+        // NotGram: never let the login request hang forever if Play Integrity does not answer
+        AndroidUtilities.runOnUIThread(() -> {
+            if (integrityDone.compareAndSet(false, true)) {
+                ApplicationLoader.logNet("acct " + currentAccount + " integrity timeout, sending fallback answer");
+                try {
+                    native_receivedIntegrityCheckClassic(currentAccount, requestToken, nonce, "PLAYINTEGRITY_FAILED_EXCEPTION_TIMEOUT");
+                } catch (Throwable ignore) {
+                }
+            }
+        }, 4000);
         AndroidUtilities.runOnUIThread(() -> {
             long start = System.currentTimeMillis();
             FileLog.d("account"+currentAccount+": server requests integrity classic check with project = "+project+" nonce = " + nonce);
@@ -1554,14 +1565,18 @@ public class ConnectionsManager extends BaseController {
                 project_id = Long.parseLong(project);
             } catch (Exception e) {
                 FileLog.d("account"+currentAccount+": integrity check failes to parse project id");
-                native_receivedIntegrityCheckClassic(currentAccount, requestToken, nonce, "PLAYINTEGRITY_FAILED_EXCEPTION_NOPROJECT");
+                if (integrityDone.compareAndSet(false, true)) {
+                    native_receivedIntegrityCheckClassic(currentAccount, requestToken, nonce, "PLAYINTEGRITY_FAILED_EXCEPTION_NOPROJECT");
+                }
                 return;
             }
             Task<IntegrityTokenResponse> integrityTokenResponse = integrityManager.requestIntegrityToken(IntegrityTokenRequest.builder().setNonce(nonce).setCloudProjectNumber(project_id).build());
             integrityTokenResponse
                 .addOnSuccessListener(r -> {
                     final String token = r.token();
-
+                    if (!integrityDone.compareAndSet(false, true)) {
+                        return;
+                    }
                     if (token == null) {
                         ApplicationLoader.logNet("acct " + currentAccount + " integrity token null");
                         FileLog.e("account"+currentAccount+": integrity check gave null token in " + (System.currentTimeMillis() - start) + "ms");
@@ -1578,6 +1593,9 @@ public class ConnectionsManager extends BaseController {
                     }
                 })
                 .addOnFailureListener(e -> {
+                    if (!integrityDone.compareAndSet(false, true)) {
+                        return;
+                    }
                     ApplicationLoader.logNet("acct " + currentAccount + " integrity failed: " + LoginActivity.errorString(e));
                     FileLog.e("account"+currentAccount+": integrity check failed to give a token in " + (System.currentTimeMillis() - start) + "ms", e);
                     native_receivedIntegrityCheckClassic(currentAccount, requestToken, nonce, "PLAYINTEGRITY_FAILED_EXCEPTION_" + LoginActivity.errorString(e));
