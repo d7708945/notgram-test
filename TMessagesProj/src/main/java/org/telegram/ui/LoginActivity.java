@@ -1755,6 +1755,14 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     private boolean isRequestingFirebaseSms;
     private void fillNextCodeParams(Bundle params, TLRPC.auth_SentCode res, boolean animate) {
+        ApplicationLoader.logNet("fillNextCodeParams: " + res.getClass().getSimpleName() + " type=" + (res.type != null ? res.type.getClass().getSimpleName() : "null"));
+        // NotGram: Firebase SMS (Play Integrity) is not available for sideloaded builds;
+        // ask the server for a regular SMS instead of hanging on the integrity check.
+        if (res.type instanceof TLRPC.TL_auth_sentCodeTypeFirebaseSms && !res.type.verifiedFirebase && !isRequestingFirebaseSms) {
+            isRequestingFirebaseSms = true;
+            resendCodeFromSafetyNet(params, res, "NOTGRAM_NO_FIREBASE");
+            return;
+        }
         if (res instanceof TLRPC.TL_auth_sentCodePaymentRequired) {
             final TLRPC.TL_auth_sentCodePaymentRequired auth = (TLRPC.TL_auth_sentCodePaymentRequired) res;
             params.putString("product", auth.store_product);
@@ -3080,6 +3088,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             settings.allow_flashcall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
             settings.allow_missed_call = simcardAvailable && allowCall;
             settings.allow_app_hash = settings.allow_firebase = PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
+            // NotGram: Firebase SMS / Play Integrity does not work for sideloaded builds
+            settings.allow_firebase = false;
             if (forceDisableSafetyNet || TextUtils.isEmpty(BuildVars.SAFETYNET_KEY)) {
                 settings.allow_firebase = false;
             }
@@ -3181,6 +3191,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             phoneInputData.patterns = phoneFormatMap.get(codeField.getText().toString());
             int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 nextPressed = false;
+                ApplicationLoader.logNet("sendCode response: " + (response != null ? response.getClass().getSimpleName() + (response instanceof TLRPC.TL_auth_SentCode ? " type=" + (((TLRPC.TL_auth_SentCode) response).type != null ? ((TLRPC.TL_auth_SentCode) response).type.getClass().getSimpleName() : "null") : "") : "null") + " error=" + (error != null ? (error.code + " " + error.text) : "null"));
                 if (error == null) {
                     if (response instanceof TLRPC.TL_auth_sentCodeSuccess) {
                         final TLRPC.auth_Authorization auth = ((TLRPC.TL_auth_sentCodeSuccess) response).authorization;

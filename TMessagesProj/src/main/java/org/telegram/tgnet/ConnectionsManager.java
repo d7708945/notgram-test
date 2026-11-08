@@ -403,6 +403,10 @@ public class ConnectionsManager extends BaseController {
 
     public int sendRequest(final TLObject object, final RequestDelegate onComplete, final RequestDelegateTimestamp onCompleteTimestamp, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connectionType, final boolean immediate) {
         final int requestToken = lastRequestToken.getAndIncrement();
+        // NotGram: log login-related requests to a readable file
+        if (object instanceof TLRPC.TL_auth_sendCode || object instanceof TLRPC.TL_auth_resendCode || object instanceof TLRPC.TL_auth_signIn || object instanceof TLRPC.TL_auth_signUp) {
+            ApplicationLoader.logNet("acct " + currentAccount + " sending " + object.getClass().getSimpleName());
+        }
         Utilities.stageQueue.postRunnable(() -> {
             sendRequestInternal(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate, requestToken);
         });
@@ -452,6 +456,9 @@ public class ConnectionsManager extends BaseController {
                         if (BuildVars.LOGS_ENABLED && error.code != -2000) {
                             FileLog.e(object + " got error " + error.code + " " + error.text);
                         }
+                    } else {
+                        // NotGram: timeouts / client-side failures have no text, log the code too
+                        ApplicationLoader.logNet("acct " + currentAccount + " request failed without text, code=" + errorCode + " req=" + object.getClass().getSimpleName());
                     }
                     if ((connectionType & ConnectionTypeDownload) != 0 && VideoPlayer.activePlayers.isEmpty()) {
                         long ping_time = native_getCurrentPingTime(currentAccount);
@@ -1537,6 +1544,7 @@ public class ConnectionsManager extends BaseController {
 
     @Keep
     public static void onIntegrityCheckClassic(final int currentAccount, final int requestToken, final String project, final String nonce) {
+        ApplicationLoader.logNet("acct " + currentAccount + " integrity check requested, project=" + project);
         AndroidUtilities.runOnUIThread(() -> {
             long start = System.currentTimeMillis();
             FileLog.d("account"+currentAccount+": server requests integrity classic check with project = "+project+" nonce = " + nonce);
@@ -1555,11 +1563,13 @@ public class ConnectionsManager extends BaseController {
                     final String token = r.token();
 
                     if (token == null) {
+                        ApplicationLoader.logNet("acct " + currentAccount + " integrity token null");
                         FileLog.e("account"+currentAccount+": integrity check gave null token in " + (System.currentTimeMillis() - start) + "ms");
                         native_receivedIntegrityCheckClassic(currentAccount, requestToken, nonce, "PLAYINTEGRITY_FAILED_EXCEPTION_NULL");
                         return;
                     }
 
+                    ApplicationLoader.logNet("acct " + currentAccount + " integrity token received in " + (System.currentTimeMillis() - start) + "ms");
                     FileLog.d("account"+currentAccount+": integrity check successfully gave token: " + token + " in " + (System.currentTimeMillis() - start) + "ms");
                     try {
                         native_receivedIntegrityCheckClassic(currentAccount, requestToken, nonce, token);
@@ -1568,6 +1578,7 @@ public class ConnectionsManager extends BaseController {
                     }
                 })
                 .addOnFailureListener(e -> {
+                    ApplicationLoader.logNet("acct " + currentAccount + " integrity failed: " + LoginActivity.errorString(e));
                     FileLog.e("account"+currentAccount+": integrity check failed to give a token in " + (System.currentTimeMillis() - start) + "ms", e);
                     native_receivedIntegrityCheckClassic(currentAccount, requestToken, nonce, "PLAYINTEGRITY_FAILED_EXCEPTION_" + LoginActivity.errorString(e));
                 });

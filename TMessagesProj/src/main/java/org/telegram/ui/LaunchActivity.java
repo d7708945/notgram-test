@@ -2832,6 +2832,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 req.settings = new TLRPC.TL_codeSettings();
                                 req.settings.allow_flashcall = false;
                                 req.settings.allow_app_hash = req.settings.allow_firebase = PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
+                                req.settings.allow_firebase = false;
                                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                                 if (req.settings.allow_app_hash) {
                                     preferences.edit().putString("sms_hash", BuildVars.getSmsHash()).apply();
