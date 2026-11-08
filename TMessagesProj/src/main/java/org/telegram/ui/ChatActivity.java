@@ -44016,13 +44016,13 @@ public class ChatActivity extends BaseFragment implements
                     activeTheme = Theme.getActiveTheme();
                 } else {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
-                    String dayThemeName = preferences.getString("lastDayTheme", "NotGram");
+                    String dayThemeName = preferences.getString("lastDayTheme", "Blue");
                     if (Theme.getTheme(dayThemeName) == null || Theme.getTheme(dayThemeName).isDark()) {
-                        dayThemeName = "NotGram";
+                        dayThemeName = "Blue";
                     }
-                    String nightThemeName = preferences.getString("lastDarkTheme", "NotGram Dark");
+                    String nightThemeName = preferences.getString("lastDarkTheme", "Dark Blue");
                     if (Theme.getTheme(nightThemeName) == null || !Theme.getTheme(nightThemeName).isDark()) {
-                        nightThemeName = "NotGram Dark";
+                        nightThemeName = "Dark Blue";
                     }
                     activeTheme = isDark ? Theme.getTheme(nightThemeName) : Theme.getTheme(dayThemeName);
                 }
@@ -44088,13 +44088,13 @@ public class ChatActivity extends BaseFragment implements
                         activeTheme = Theme.getActiveTheme();
                     } else {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
-                        String dayThemeName = preferences.getString("lastDayTheme", "NotGram");
+                        String dayThemeName = preferences.getString("lastDayTheme", "Blue");
                         if (Theme.getTheme(dayThemeName) == null || Theme.getTheme(dayThemeName).isDark()) {
-                            dayThemeName = "NotGram";
+                            dayThemeName = "Blue";
                         }
-                        String nightThemeName = preferences.getString("lastDarkTheme", "NotGram Dark");
+                        String nightThemeName = preferences.getString("lastDarkTheme", "Dark Blue");
                         if (Theme.getTheme(nightThemeName) == null || !Theme.getTheme(nightThemeName).isDark()) {
-                            nightThemeName = "NotGram Dark";
+                            nightThemeName = "Dark Blue";
                         }
                         activeTheme = isDark ? Theme.getTheme(nightThemeName) : Theme.getTheme(dayThemeName);
                     }

@@ -218,8 +218,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             DialogsActivity.switchingTheme = true;
 
             // TODO: Generify this part, currently it's a clone of another theme switch toggle
-            String dayThemeName = "NotGram";
-            String nightThemeName = "NotGram Night";
+            String dayThemeName = "Blue";
+            String nightThemeName = "Night";
 
             Theme.ThemeInfo themeInfo;
             boolean toDark;

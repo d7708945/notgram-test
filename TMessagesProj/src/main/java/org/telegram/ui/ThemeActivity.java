@@ -1018,7 +1018,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                             listAdapter.notifyItemChanged(bubbleRadiusRow, new Object());
                         }
                         if (themesHorizontalListCell != null) {
-                            Theme.ThemeInfo themeInfo = Theme.getTheme("NotGram");
+                            Theme.ThemeInfo themeInfo = Theme.getTheme("Blue");
                             Theme.ThemeInfo currentTheme = Theme.getCurrentTheme();
                             Theme.ThemeAccent accent = themeInfo.themeAccentsMap.get(Theme.DEFALT_THEME_ACCENT_ID);
                             if (accent != null) {
@@ -1051,20 +1051,20 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     }
                 } else if (id == day_night_switch) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
-                    String dayThemeName = preferences.getString("lastDayTheme", "NotGram");
+                    String dayThemeName = preferences.getString("lastDayTheme", "Blue");
                     if (Theme.getTheme(dayThemeName) == null || Theme.getTheme(dayThemeName).isDark()) {
-                        dayThemeName = "NotGram";
+                        dayThemeName = "Blue";
                     }
-                    String nightThemeName = preferences.getString("lastDarkTheme", "NotGram Dark");
+                    String nightThemeName = preferences.getString("lastDarkTheme", "Dark Blue");
                     if (Theme.getTheme(nightThemeName) == null || !Theme.getTheme(nightThemeName).isDark()) {
-                        nightThemeName = "NotGram Dark";
+                        nightThemeName = "Dark Blue";
                     }
                     Theme.ThemeInfo themeInfo = Theme.getActiveTheme();
                     if (dayThemeName.equals(nightThemeName)) {
-                        if (themeInfo.isDark() || dayThemeName.equals("NotGram Dark") || dayThemeName.equals("NotGram Night")) {
-                            dayThemeName = "NotGram";
+                        if (themeInfo.isDark() || dayThemeName.equals("Dark Blue") || dayThemeName.equals("Night")) {
+                            dayThemeName = "Blue";
                         } else {
-                            nightThemeName = "NotGram Dark";
+                            nightThemeName = "Dark Blue";
                         }
                     }
 
