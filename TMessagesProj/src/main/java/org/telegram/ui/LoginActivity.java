@@ -8371,9 +8371,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     public LoginActivity setIntroView(View intro, TextView startButton) {
-        //introView = intro;
-        //startMessagingButton = startButton;
-        //isAnimatingIntro = true;
+        introView = intro;
+        startMessagingButton = startButton;
+        isAnimatingIntro = true;
         return this;
     }
 

@@ -24,6 +24,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.SystemClock;
@@ -47,6 +48,9 @@ import org.telegram.ui.IUpdateLayout;
 import org.telegram.ui.LauncherIconController;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.util.Date;
 import java.util.Locale;
 
 public class ApplicationLoader extends Application {
@@ -282,6 +286,35 @@ public class ApplicationLoader extends Application {
     @Override
     public void onCreate() {
         applicationLoaderInstance = this;
+        // NotGram: save crash stack traces to a user-readable folder (no adb/root required)
+        try {
+            final Thread.UncaughtExceptionHandler previousHandler = Thread.getDefaultUncaughtExceptionHandler();
+            Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+                try {
+                    File dir = null;
+                    final File[] mediaDirs = getExternalMediaDirs();
+                    if (mediaDirs != null && mediaDirs.length > 0) {
+                        dir = mediaDirs[0];
+                    }
+                    if (dir == null) {
+                        dir = new File(Environment.getExternalStorageDirectory(), "Android/media/org.notgram.messenger");
+                    }
+                    if (!dir.exists()) {
+                        dir.mkdirs();
+                    }
+                    try (PrintWriter pw = new PrintWriter(new FileWriter(new File(dir, "notgram_crash.txt"), true))) {
+                        pw.println("=== " + new Date() + " | thread=" + thread.getName() + " ===");
+                        throwable.printStackTrace(pw);
+                        pw.flush();
+                    }
+                } catch (Throwable ignore) {
+                }
+                if (previousHandler != null) {
+                    previousHandler.uncaughtException(thread, throwable);
+                }
+            });
+        } catch (Throwable ignore) {
+        }
         try {
             applicationContext = getApplicationContext();
         } catch (Throwable ignore) {
