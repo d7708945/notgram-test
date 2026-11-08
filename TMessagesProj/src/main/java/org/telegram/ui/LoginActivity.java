@@ -3191,7 +3191,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             phoneInputData.patterns = phoneFormatMap.get(codeField.getText().toString());
             int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 nextPressed = false;
-                ApplicationLoader.logNet("sendCode response: " + (response != null ? response.getClass().getSimpleName() + (response instanceof TLRPC.TL_auth_SentCode ? " type=" + (((TLRPC.TL_auth_SentCode) response).type != null ? ((TLRPC.TL_auth_SentCode) response).type.getClass().getSimpleName() : "null") : "") : "null") + " error=" + (error != null ? (error.code + " " + error.text) : "null"));
+                ApplicationLoader.logNet("sendCode response: " + (response != null ? response.getClass().getSimpleName() + (response instanceof TLRPC.auth_SentCode ? " type=" + (((TLRPC.auth_SentCode) response).type != null ? ((TLRPC.auth_SentCode) response).type.getClass().getSimpleName() : "null") : "") : "null") + " error=" + (error != null ? (error.code + " " + error.text) : "null"));
                 if (error == null) {
                     if (response instanceof TLRPC.TL_auth_sentCodeSuccess) {
                         final TLRPC.auth_Authorization auth = ((TLRPC.TL_auth_sentCodeSuccess) response).authorization;
